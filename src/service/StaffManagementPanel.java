@@ -1,4 +1,4 @@
-package panlen;
+package service;
 
 import dao.StaffDAO;
 import model.Staff;
@@ -7,14 +7,7 @@ import javax.swing.table.DefaultTableModel;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * StaffManagementPanel - Implements the Single Responsibility Principle
- * 
- * This panel is responsible solely for staff management operations,
- * including CRUD operations, search functionality, and form validation.
- * It encapsulates all staff-related UI logic and business rules,
- * ensuring that changes to staff management don't affect other system components.
- */
+
 public class StaffManagementPanel extends JPanel {
     
     private final StaffDAO staffDAO;
@@ -198,7 +191,7 @@ public class StaffManagementPanel extends JPanel {
         roleField.setText(staff.getRoleName());
         mobileField.setText(staff.getContactNumber());
         usernameField.setText(staff.getUsername());
-        passwordField.setText(""); // Don't populate password for security
+        passwordField.setText("");
         departmentField.setText(staff.getDepartment());
         emailField.setText(staff.getEmail());
     }

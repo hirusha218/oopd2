@@ -216,16 +216,25 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Update"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="u_updateActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="u_add">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Add"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="u_addActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="u_delete">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Delete"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="u_deleteActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel42">
                   <Properties>
@@ -556,6 +565,9 @@
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JTextField" name="s_name">
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="s_nameActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel11">
                   <Properties>
@@ -775,16 +787,25 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Add"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="s_btn_1ActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="s_btn_2">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Update "/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="s_btn_2ActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="s_btn_3">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Delete"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="s_btn_3ActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel17">
                   <Properties>
@@ -1191,6 +1212,14 @@
                 </Component>
                 <Component class="javax.swing.JTextField" name="bil_amount">
                 </Component>
+                <Component class="javax.swing.JButton" name="clearBillingSearchBtn">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Clear Search"/>
+                  </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearBillingSearchBtnActionPerformed"/>
+                  </Events>
+                </Component>
                 <Component class="javax.swing.JLabel" name="jLabel23">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Payment Stutas"/>
@@ -1386,11 +1415,17 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Add"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="b_btn_1ActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="b_btn_2">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Update"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="b_btn_2ActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="b_btn_3">
                   <Properties>

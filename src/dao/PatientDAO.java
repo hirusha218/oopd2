@@ -1,22 +1,14 @@
 package dao;
 
+import model.Patient;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import model.Patient;
-import java.util.Date;
 
-/**
- * PatientDAO - Implements the DAO (Data Access Object) Pattern
- * 
- * This class encapsulates all database operations for Patient entities,
- * providing a clean separation between business logic and data access.
- * It handles CRUD operations, search functionality, and patient
- * management while abstracting the underlying database implementation details.
- */
+
 public class PatientDAO {
 
     private final Connection connection;
@@ -25,175 +17,179 @@ public class PatientDAO {
         this.connection = connection;
     }
 
-    // Create new patient
+    
     public boolean createPatient(Patient patient) throws SQLException {
-        String sql = "INSERT INTO patients (first_name, last_name, date_of_birth, gender, contact_number, email, address, emergency_contact, insurance_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO patients (patient_id, first_name, last_name, dateOfBirth, gender, contact_number, " +
+                     "email, address, emergency_contact, insurance_id, status, registration_date, last_visit_date, " +
+                     "medical_history, medical_report, medicine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, patient.getFirstName());
-            pstmt.setString(2, patient.getLastName());
-            pstmt.setDate(3, new java.sql.Date(patient.getDateOfBirth() != null ? patient.getDateOfBirth().getTime() : new Date().getTime()));
-            pstmt.setString(4, patient.getGender());
-            pstmt.setString(5, patient.getContactNumber());
-            pstmt.setString(6, patient.getEmail());
-            pstmt.setString(7, patient.getAddress());
-            pstmt.setString(8, patient.getEmergencyContact());
-            pstmt.setObject(9, patient.getInsuranceId());
-            pstmt.setString(10, patient.getStatus() != null ? patient.getStatus() : "Active");
+            pstmt.setString(1, patient.getPatientId());
+            pstmt.setString(2, patient.getFirstName());
+            pstmt.setString(3, patient.getLastName());
+            pstmt.setDate(4, patient.getDateOfBirth() != null ? new java.sql.Date(patient.getDateOfBirth().getTime()) : null);
+            pstmt.setString(5, patient.getGender());
+            pstmt.setString(6, patient.getContactNumber());
+            pstmt.setString(7, patient.getEmail());
+            pstmt.setString(8, patient.getAddress());
+            pstmt.setString(9, patient.getEmergencyContact());
+            pstmt.setObject(10, patient.getInsuranceId(), java.sql.Types.INTEGER);
+            pstmt.setString(11, patient.getStatus() != null ? patient.getStatus() : "Active");
+            pstmt.setDate(12, patient.getRegistrationDate() != null ? new java.sql.Date(patient.getRegistrationDate().getTime()) : null);
+            pstmt.setDate(13, patient.getLastVisitDate() != null ? new java.sql.Date(patient.getLastVisitDate().getTime()) : null);
+            pstmt.setString(14, patient.getMedicalHistory());
+            pstmt.setString(15, patient.getMedicalReport());
+            pstmt.setString(16, patient.getMedicine());
             return pstmt.executeUpdate() > 0;
         }
     }
 
-    // Get all patients
     public List<Patient> getAllPatients() throws SQLException {
         List<Patient> patientList = new ArrayList<>();
         String sql = "SELECT * FROM patients ORDER BY patient_id";
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
-                Patient patient = new Patient();
-                patient.setPatientId(rs.getInt("patient_id"));
-                patient.setFirstName(rs.getString("first_name"));
-                patient.setLastName(rs.getString("last_name"));
-                patient.setDateOfBirth(rs.getDate("date_of_birth"));
-                patient.setGender(rs.getString("gender"));
-                patient.setContactNumber(rs.getString("contact_number"));
-                patient.setEmail(rs.getString("email"));
-                patient.setAddress(rs.getString("address"));
-                patient.setEmergencyContact(rs.getString("emergency_contact"));
-                Integer insuranceId = rs.getInt("insurance_id");
-                patient.setInsuranceId(rs.wasNull() ? null : insuranceId);
-                patient.setStatus(rs.getString("status"));
-                patient.setRegistrationDate(rs.getDate("registration_date"));
-                patient.setLastVisitDate(rs.getDate("last_visit_date"));
-                patientList.add(patient);
+                patientList.add(mapResultSetToPatient(rs));
             }
         }
         return patientList;
     }
 
-    // Get patient by ID
-    public Patient getPatientById(int patientId) throws SQLException {
+
+    public Patient getPatientById(int patient_id) throws SQLException {
         String sql = "SELECT * FROM patients WHERE patient_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, patientId);
+            pstmt.setString(1, patient_id);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    Patient patient = new Patient();
-                    patient.setPatientId(rs.getInt("patient_id"));
-                    patient.setFirstName(rs.getString("first_name"));
-                    patient.setLastName(rs.getString("last_name"));
-                    patient.setDateOfBirth(rs.getDate("date_of_birth"));
-                    patient.setGender(rs.getString("gender"));
-                    patient.setContactNumber(rs.getString("contact_number"));
-                    patient.setEmail(rs.getString("email"));
-                    patient.setAddress(rs.getString("address"));
-                    patient.setEmergencyContact(rs.getString("emergency_contact"));
-                    Integer insuranceId = rs.getInt("insurance_id");
-                    patient.setInsuranceId(rs.wasNull() ? null : insuranceId);
-                    patient.setStatus(rs.getString("status"));
-                    patient.setRegistrationDate(rs.getDate("registration_date"));
-                    patient.setLastVisitDate(rs.getDate("last_visit_date"));
-                    return patient;
+                    return mapResultSetToPatient(rs);
                 }
             }
         }
         return null;
     }
 
-    // Update patient
+  
     public boolean updatePatient(Patient patient) throws SQLException {
-        String sql = "UPDATE patients SET first_name=?, last_name=?, date_of_birth=?, gender=?, contact_number=?, email=?, address=?, emergency_contact=?, insurance_id=?, status=? WHERE patient_id=?";
+        String sql = "UPDATE patients SET first_name=?, last_name=?, dateOfBirth=?, gender=?, contact_number=?, " +
+                     "email=?, address=?, emergency_contact=?, insurance_id=?, status=?, registration_date=?, " +
+                     "last_visit_date=?, medical_history=?, medical_report=?, medicine=? WHERE patient_id=?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, patient.getFirstName());
             pstmt.setString(2, patient.getLastName());
-            pstmt.setDate(3, new java.sql.Date(patient.getDateOfBirth() != null ? patient.getDateOfBirth().getTime() : new Date().getTime()));
+            pstmt.setDate(3, patient.getDateOfBirth() != null ? new java.sql.Date(patient.getDateOfBirth().getTime()) : null);
             pstmt.setString(4, patient.getGender());
             pstmt.setString(5, patient.getContactNumber());
             pstmt.setString(6, patient.getEmail());
             pstmt.setString(7, patient.getAddress());
             pstmt.setString(8, patient.getEmergencyContact());
-            pstmt.setObject(9, patient.getInsuranceId());
+            pstmt.setObject(9, patient.getInsuranceId(), java.sql.Types.INTEGER);
             pstmt.setString(10, patient.getStatus() != null ? patient.getStatus() : "Active");
-            pstmt.setInt(11, patient.getPatientId());
+            pstmt.setDate(11, patient.getRegistrationDate() != null ? new java.sql.Date(patient.getRegistrationDate().getTime()) : null);
+            pstmt.setDate(12, patient.getLastVisitDate() != null ? new java.sql.Date(patient.getLastVisitDate().getTime()) : null);
+            pstmt.setString(13, patient.getMedicalHistory());
+            pstmt.setString(14, patient.getMedicalReport());
+            pstmt.setString(15, patient.getMedicine());
+            pstmt.setString(16, patient.getPatientId());
             return pstmt.executeUpdate() > 0;
         }
     }
 
-    // Delete patient
-    public boolean deletePatient(int patientId) throws SQLException {
+    public boolean deletePatient(int patient_id) throws SQLException {
         String sql = "DELETE FROM patients WHERE patient_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setInt(1, patientId);
+            pstmt.setString(1, patient_id);
             return pstmt.executeUpdate() > 0;
         }
     }
 
-    // Search patients by name, contact, or email
-    public List<Patient> searchPatients(String searchTerm) throws SQLException {
+  
+    public List<Patient> searchPatients(String id, String name, String mobile) throws SQLException {
         List<Patient> patientList = new ArrayList<>();
-        String sql = "SELECT * FROM patients WHERE first_name LIKE ? OR last_name LIKE ? OR contact_number LIKE ? OR email LIKE ? ORDER BY patient_id";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            String searchPattern = "%" + searchTerm + "%";
-            pstmt.setString(1, searchPattern);
-            pstmt.setString(2, searchPattern);
-            pstmt.setString(3, searchPattern);
-            pstmt.setString(4, searchPattern);
-            
+        StringBuilder sql = new StringBuilder("SELECT * FROM patients WHERE 1=1");
+        if (!id.isEmpty()) sql.append(" AND patient_id LIKE ?");
+        if (!name.isEmpty()) sql.append(" AND CONCAT(first_name, ' ', last_name) LIKE ?");
+        if (!mobile.isEmpty()) sql.append(" AND contact_number LIKE ?");
+        sql.append(" ORDER BY patient_id");
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+            if (!id.isEmpty()) pstmt.setString(paramIndex++, "%" + id + "%");
+            if (!name.isEmpty()) pstmt.setString(paramIndex++, "%" + name + "%");
+            if (!mobile.isEmpty()) pstmt.setString(paramIndex++, "%" + mobile + "%");
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    Patient patient = new Patient();
-                    patient.setPatientId(rs.getInt("patient_id"));
-                    patient.setFirstName(rs.getString("first_name"));
-                    patient.setLastName(rs.getString("last_name"));
-                    patient.setDateOfBirth(rs.getDate("date_of_birth"));
-                    patient.setGender(rs.getString("gender"));
-                    patient.setContactNumber(rs.getString("contact_number"));
-                    patient.setEmail(rs.getString("email"));
-                    patient.setAddress(rs.getString("address"));
-                    patient.setEmergencyContact(rs.getString("emergency_contact"));
-                    Integer insuranceId = rs.getInt("insurance_id");
-                    patient.setInsuranceId(rs.wasNull() ? null : insuranceId);
-                    patient.setStatus(rs.getString("status"));
-                    patient.setRegistrationDate(rs.getDate("registration_date"));
-                    patient.setLastVisitDate(rs.getDate("last_visit_date"));
-                    patientList.add(patient);
+                    patientList.add(mapResultSetToPatient(rs));
                 }
             }
         }
         return patientList;
     }
 
-    // Get patients by status
-    public List<Patient> getPatientsByStatus(String status) throws SQLException {
+    public List<Patient> getPatientsByGender(String gender) throws SQLException {
         List<Patient> patientList = new ArrayList<>();
-        String sql = "SELECT * FROM patients WHERE status = ? ORDER BY patient_id";
+        String sql = "SELECT * FROM patients WHERE gender = ? ORDER BY first_name, last_name";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, gender);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    patientList.add(mapResultSetToPatient(rs));
+                }
+            }
+        }
+        return patientList;
+    }
+
+ 
+    public List<Patient> getPatientsByInsurance(Integer insuranceId) throws SQLException {
+        List<Patient> patientList = new ArrayList<>();
+        String sql = "SELECT * FROM patients WHERE insurance_id = ? ORDER BY first_name, last_name";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setObject(1, insuranceId, java.sql.Types.INTEGER);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    patientList.add(mapResultSetToPatient(rs));
+                }
+            }
+        }
+        return patientList;
+    }
+
+
+    public List<Patient> getActivePatients() throws SQLException {
+        List<Patient> patientList = new ArrayList<>();
+        String sql = "SELECT * FROM patients WHERE status = 'Active' ORDER BY first_name, last_name";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                patientList.add(mapResultSetToPatient(rs));
+            }
+        }
+        return patientList;
+    }
+
+    public boolean updatePatientStatus(String patientId, String status) throws SQLException {
+        String sql = "UPDATE patients SET status = ? WHERE patient_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, status);
+            pstmt.setString(2, patientId);
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+
+  
+    public int getPatientCountByStatus(String status) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM patients WHERE status = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, status);
             try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    Patient patient = new Patient();
-                    patient.setPatientId(rs.getInt("patient_id"));
-                    patient.setFirstName(rs.getString("first_name"));
-                    patient.setLastName(rs.getString("last_name"));
-                    patient.setDateOfBirth(rs.getDate("date_of_birth"));
-                    patient.setGender(rs.getString("gender"));
-                    patient.setContactNumber(rs.getString("contact_number"));
-                    patient.setEmail(rs.getString("email"));
-                    patient.setAddress(rs.getString("address"));
-                    patient.setEmergencyContact(rs.getString("emergency_contact"));
-                    Integer insuranceId = rs.getInt("insurance_id");
-                    patient.setInsuranceId(rs.wasNull() ? null : insuranceId);
-                    patient.setStatus(rs.getString("status"));
-                    patient.setRegistrationDate(rs.getDate("registration_date"));
-                    patient.setLastVisitDate(rs.getDate("last_visit_date"));
-                    patientList.add(patient);
+                if (rs.next()) {
+                    return rs.getInt(1);
                 }
             }
         }
-        return patientList;
+        return 0;
     }
-
-    // Get total patient count
     public int getTotalPatientCount() throws SQLException {
         String sql = "SELECT COUNT(*) FROM patients";
         try (PreparedStatement pstmt = connection.prepareStatement(sql);
@@ -205,19 +201,32 @@ public class PatientDAO {
         return 0;
     }
 
-    // Get active patient count
-    public int getActivePatientCount() throws SQLException {
-        String sql = "SELECT COUNT(*) FROM patients WHERE status = 'Active'";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-        }
-        return 0;
+    private Patient mapResultSetToPatient(ResultSet rs) throws SQLException {
+        Patient patient = new Patient();
+        patient.setPatientId(rs.getString("patient_id"));
+        patient.setFirstName(rs.getString("first_name"));
+        patient.setLastName(rs.getString("last_name"));
+        patient.setDateOfBirth(rs.getDate("dateOfBirth"));
+        patient.setGender(rs.getString("gender"));
+        patient.setContactNumber(rs.getString("contact_number"));
+        patient.setEmail(rs.getString("email"));
+        patient.setAddress(rs.getString("address"));
+        patient.setEmergencyContact(rs.getString("emergency_contact"));
+        patient.setInsuranceId(rs.getObject("insurance_id") != null ? rs.getInt("insurance_id") : null);
+        patient.setStatus(rs.getString("status"));
+        patient.setRegistrationDate(rs.getDate("registration_date"));
+        patient.setLastVisitDate(rs.getDate("last_visit_date"));
+        patient.setMedicalHistory(rs.getString("medical_history"));
+        patient.setMedicalReport(rs.getString("medical_report"));
+        patient.setMedicine(rs.getString("medicine"));
+        return patient;
     }
 
-    public List<Patient> getActivePatients() {
+    public List<Patient> searchPatients(String searchTerm) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-} 
+
+    public boolean addPatient(Patient patient) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+}

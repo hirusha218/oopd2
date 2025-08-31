@@ -1,10 +1,9 @@
-package panlen;
+package service;
 
 import java.awt.Component;
 import java.awt.HeadlessException;
 import utils.DBConnection;
 import utils.DashboardConstants;
-import gui.Dashboard.DashboardMediator;
 import javax.swing.*;
 import java.sql.Connection;
 
@@ -175,10 +174,7 @@ public class RefactoredAdminDashboard extends JFrame {
             JOptionPane.INFORMATION_MESSAGE);
     }
     
-    /**
-     * Get the mediator for external access if needed
-     * @return 
-     */
+
     public DashboardMediator getMediator() {
         return mediator;
     }

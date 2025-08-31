@@ -1,4 +1,4 @@
-package panlen;
+package service;
 
 import dao.BillingDAO;
 import model.Billing;
@@ -8,14 +8,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.text.SimpleDateFormat;
 
-/**
- * BillingManagementPanel - Implements the Single Responsibility Principle
- * 
- * This panel is responsible solely for billing management operations,
- * including CRUD operations, search functionality, and financial record handling.
- * It encapsulates all billing-related UI logic and business rules,
- * ensuring that changes to billing management don't affect other system components.
- */
 public class BillingManagementPanel extends JPanel {
     
     private BillingDAO billingDAO;

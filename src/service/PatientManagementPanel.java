@@ -1,4 +1,4 @@
-package panlen;
+package service;
 
 import dao.PatientDAO;
 import model.Patient;
@@ -6,6 +6,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * PatientManagementPanel - Implements the Single Responsibility Principle
@@ -131,7 +133,13 @@ public class PatientManagementPanel extends JPanel {
         });
         
         // Search field listener
-        searchField.addActionListener(e -> performSearch());
+        searchField.addActionListener(e -> {
+            try {
+                performSearch();
+            } catch (SQLException ex) {
+                Logger.getLogger(PatientManagementPanel.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
         
         // Button action listeners
         addButton.addActionListener(e -> handleAddPatient());
@@ -165,15 +173,10 @@ public class PatientManagementPanel extends JPanel {
     private void handleTableSelection() {
         int selectedRow = patientTable.getSelectedRow();
         if (selectedRow >= 0) {
-            try {
-                int patientId = (Integer) patientTableModel.getValueAt(selectedRow, 0);
-                selectedPatient = patientDAO.getPatientById(patientId);
-                if (selectedPatient != null) {
-                    populateFormFields(selectedPatient);
-                }
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error loading patient details: " + ex.getMessage(), 
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+            int patientId = (Integer) patientTableModel.getValueAt(selectedRow, 0);
+            selectedPatient = patientDAO.getPatientById(patientId);
+            if (selectedPatient != null) {
+                populateFormFields(selectedPatient);
             }
         }
     }
@@ -309,37 +312,30 @@ public class PatientManagementPanel extends JPanel {
         }
     }
     
-    private void performSearch() {
+    private void performSearch() throws SQLException {
         String searchTerm = searchField.getText().trim();
         if (searchTerm.isEmpty()) {
             loadPatientData();
             return;
         }
         
-        try {
-            List<Patient> searchResults = patientDAO.searchPatients(searchTerm);
-            patientTableModel.setRowCount(0);
-            
-            for (Patient patient : searchResults) {
-                Object[] row = {
-                    patient.getPatientId(),
-                    patient.getFirstName(),
-                    patient.getLastName(),
-                    patient.getGender(),
-                    patient.getContactNumber(),
-                    patient.getEmail(),
-                    patient.getStatus()
-                };
-                patientTableModel.addRow(row);
-            }
-            
-            if (searchResults.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No patients found matching: " + searchTerm, 
-                                            "Search Results", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Search error: " + ex.getMessage(), 
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+        List<Patient> searchResults = patientDAO.searchPatients(searchTerm);
+        patientTableModel.setRowCount(0);
+        for (Patient patient : searchResults) {
+            Object[] row = {
+                patient.getPatientId(),
+                patient.getFirstName(),
+                patient.getLastName(),
+                patient.getGender(),
+                patient.getContactNumber(),
+                patient.getEmail(),
+                patient.getStatus()
+            };
+            patientTableModel.addRow(row);
+        }
+        if (searchResults.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No patients found matching: " + searchTerm,
+                    "Search Results", JOptionPane.INFORMATION_MESSAGE);
         }
     }
     

@@ -257,6 +257,115 @@ public class BillingDAO {
         return billingList;
     }
 
+    // Advanced search billing by multiple fields
+    public List<Billing> searchBillingAdvanced(String idSearch, String statusSearch, String patientNameSearch, 
+                                              String doctorNameSearch, String dateFromSearch, String dateToSearch, 
+                                              String amountSearch) throws SQLException {
+        List<Billing> billingList = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT b.*, p.first_name, p.last_name, s.first_name as doctor_first_name, s.last_name as doctor_last_name, " +
+                     "a.appointment_date FROM billing b " +
+                     "LEFT JOIN patients p ON b.patient_id = p.patient_id " +
+                     "LEFT JOIN appointments a ON b.appointment_id = a.appointment_id " +
+                     "LEFT JOIN staff s ON a.staff_id = s.staff_id " +
+                     "WHERE 1=1");
+        List<Object> parameters = new ArrayList<>();
+        
+        if (idSearch != null && !idSearch.trim().isEmpty()) {
+            try {
+                int billId = Integer.parseInt(idSearch.trim());
+                sql.append(" AND b.bill_id = ?");
+                parameters.add(billId);
+            } catch (NumberFormatException e) {
+                // If ID is not a valid number, skip this search criteria
+            }
+        }
+        
+        if (statusSearch != null && !statusSearch.trim().isEmpty()) {
+            sql.append(" AND b.payment_status LIKE ?");
+            parameters.add("%" + statusSearch.trim() + "%");
+        }
+        
+        if (patientNameSearch != null && !patientNameSearch.trim().isEmpty()) {
+            sql.append(" AND (p.first_name LIKE ? OR p.last_name LIKE ?)");
+            String patientPattern = "%" + patientNameSearch.trim() + "%";
+            parameters.add(patientPattern);
+            parameters.add(patientPattern);
+        }
+        
+        if (doctorNameSearch != null && !doctorNameSearch.trim().isEmpty()) {
+            sql.append(" AND (s.first_name LIKE ? OR s.last_name LIKE ?)");
+            String doctorPattern = "%" + doctorNameSearch.trim() + "%";
+            parameters.add(doctorPattern);
+            parameters.add(doctorPattern);
+        }
+        
+        if (dateFromSearch != null && !dateFromSearch.trim().isEmpty()) {
+            sql.append(" AND DATE(b.bill_date) >= ?");
+            parameters.add(dateFromSearch.trim());
+        }
+        
+        if (dateToSearch != null && !dateToSearch.trim().isEmpty()) {
+            sql.append(" AND DATE(b.bill_date) <= ?");
+            parameters.add(dateToSearch.trim());
+        }
+        
+        if (amountSearch != null && !amountSearch.trim().isEmpty()) {
+            try {
+                java.math.BigDecimal amount = new java.math.BigDecimal(amountSearch.trim());
+                sql.append(" AND b.total_amount = ?");
+                parameters.add(amount);
+            } catch (NumberFormatException e) {
+                // If amount is not a valid number, skip this search criteria
+            }
+        }
+        
+        sql.append(" ORDER BY b.bill_id");
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < parameters.size(); i++) {
+                pstmt.setObject(i + 1, parameters.get(i));
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Billing billing = new Billing();
+                    billing.setBillId(rs.getInt("bill_id"));
+                    billing.setPatientId(rs.getInt("patient_id"));
+                    int appointmentId = rs.getInt("appointment_id");
+                    billing.setAppointmentId(rs.wasNull() ? null : appointmentId);
+                    billing.setTotalAmount(rs.getBigDecimal("total_amount"));
+                    billing.setPaymentStatus(rs.getString("payment_status"));
+                    billing.setBillDate(rs.getDate("bill_date"));
+                    Date dueDate = rs.getDate("due_date");
+                    billing.setDueDate(rs.wasNull() ? null : dueDate);
+                    billing.setBillType(rs.getString("bill_type"));
+                    billing.setDescription(rs.getString("description"));
+                    billing.setNotes(rs.getString("notes"));
+                    
+                    // Set display fields
+                    billing.setPatientName(rs.getString("first_name") + " " + rs.getString("last_name"));
+                    String doctorFirstName = rs.getString("doctor_first_name");
+                    String doctorLastName = rs.getString("doctor_last_name");
+                    if (doctorFirstName != null && doctorLastName != null) {
+                        billing.setDoctorName(doctorFirstName + " " + doctorLastName);
+                    } else {
+                        billing.setDoctorName("N/A");
+                    }
+                    
+                    Date appointmentDate = rs.getDate("appointment_date");
+                    if (appointmentDate != null) {
+                        billing.setAppointmentDate(appointmentDate.toString());
+                    } else {
+                        billing.setAppointmentDate("N/A");
+                    }
+                    
+                    billingList.add(billing);
+                }
+            }
+        }
+        return billingList;
+    }
+
     // Get billing by patient ID
     public List<Billing> getBillingByPatientId(int patientId) throws SQLException {
         List<Billing> billingList = new ArrayList<>();

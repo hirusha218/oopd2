@@ -1,5 +1,22 @@
-
 package gui.Dashboard;
+
+import dao.PatientDAO;
+import dao.AppointmentDAO;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableModel;
+import model.Patient;
+import model.Appointment;
+import utils.DBConnection;
+import gui.Dashboard.AppointmentMediator;
 
 /**
  *
@@ -7,9 +24,527 @@ package gui.Dashboard;
  */
 public class Nurse_Dashboard extends javax.swing.JFrame {
 
-   
+    // Patient Management Fields
+    private JTable patientTable;
+    private JTextField patientIdField;
+    private JTextField patientNameField;
+    private JTextField patientAgeField;
+    private JTextField patientAddressField;
+    private JTextField patientGenderField;
+    private JTextField patientDobField;
+    private JTextField patientMobileField;
+
+    // Search Fields
+    private JTextField searchIdField;
+    private JTextField searchNameField;
+    private JTextField searchAgeField;
+    private JTextField searchDobField;
+    private JTextField searchMobileField;
+
+    // Appointment Management Fields
+    private JTable appointmentTable;
+    private JTextField appointmentPatientIdField;
+    private JTextField appointmentPatientNameField;
+    private JTextField appointmentDoctorNameField;
+    private JTextField appointmentDateField;
+    private JTextField appointmentTimeField;
+
+    // Appointment Search Fields
+    private JTextField appointmentSearchPatientIdField;
+    private JTextField appointmentSearchPatientNameField;
+    private JTextField appointmentSearchDoctorNameField;
+    private JTextField appointmentSearchDateField;
+    private JTextField appointmentSearchTimeField;
+
+    private Connection conn;
+    private AppointmentMediator appointmentMediator;
+
     public Nurse_Dashboard() {
-        initComponents();
+        try {
+            initializeDatabaseConnection();
+            initComponents();
+            initializeFields();
+            
+            // Initialize appointment mediator
+            appointmentMediator = new AppointmentMediator();
+            appointmentMediator.registerComponents(
+                appointmentTable,
+                appointmentPatientIdField,
+                appointmentPatientNameField,
+                appointmentDoctorNameField,
+                appointmentDateField,
+                appointmentTimeField,
+                appointmentSearchPatientIdField,
+                appointmentSearchPatientNameField,
+                appointmentSearchDoctorNameField,
+                appointmentSearchDateField,
+                appointmentSearchTimeField
+            );
+            
+            loadAllPatients();
+            appointmentMediator.loadAllAppointments();
+            setupLiveSearch();
+            setupTableSelection();
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error initializing Nurse Dashboard", ex);
+            JOptionPane.showMessageDialog(this, "Error initializing dashboard: " + ex.getMessage(),
+                    "Initialization Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void initializeDatabaseConnection() throws SQLException {
+        try {
+            conn = DBConnection.getInstance().getConnection();
+            if (conn == null || conn.isClosed()) {
+                throw new SQLException("Unable to establish database connection");
+            }
+
+            try (java.sql.PreparedStatement testStmt = conn.prepareStatement("SELECT 1")) {
+                testStmt.executeQuery();
+            }
+
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.INFO, "Database connection established successfully");
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Database connection error", ex);
+            throw new SQLException("Database connection failed: " + ex.getMessage());
+        }
+    }
+
+    private void initializeFields() {
+        // Initialize patient management fields
+        patientTable = jTable2;
+        // Patient ID will be auto-generated and stored internally
+        patientIdField = new JTextField(); // Create a hidden field for ID
+        patientNameField = jTextField4; // Name
+        patientAgeField = jTextField1; // Age
+        patientAddressField = jTextField2; // Address
+        patientGenderField = jTextField6; // Gender
+        patientDobField = jTextField5; // Date of Birth
+        patientMobileField = jTextField3; // Mobile
+
+        // Initialize search fields
+        searchIdField = jTextField14;
+        searchNameField = jTextField17;
+        searchAgeField = jTextField15;
+        searchDobField = jTextField16;
+        searchMobileField = jTextField7;
+
+        // Initialize appointment fields
+        appointmentTable = jTable1;
+        appointmentPatientIdField = jTextField20;
+        appointmentPatientNameField = jTextField19;
+        appointmentDoctorNameField = jTextField18;
+        appointmentDateField = jTextField22;
+        appointmentTimeField = jTextField27;
+
+        // Initialize appointment search fields
+        appointmentSearchPatientIdField = jTextField21;
+        appointmentSearchPatientNameField = jTextField24;
+        appointmentSearchDoctorNameField = jTextField25;
+        appointmentSearchDateField = jTextField26;
+        appointmentSearchTimeField = jTextField23;
+
+        // Add placeholders and validation
+        setupFieldValidation();
+        setupAppointmentFieldValidation();
+    }
+
+    private void setupFieldValidation() {
+        // Add input validation for age field
+        patientAgeField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE) {
+                    evt.consume();
+                }
+            }
+        });
+
+        // Add date format hint
+        patientDobField.setToolTipText("Enter date in YYYY-MM-DD format (e.g., 1990-01-15)");
+    }
+
+    private void setupAppointmentFieldValidation() {
+        // Add date format hint for appointment date
+        appointmentDateField.setToolTipText("Enter date in YYYY-MM-DD format (e.g., 2024-12-25)");
+        appointmentTimeField.setToolTipText("Enter time in HH:MM format (e.g., 14:30)");
+
+        // Add date format hint for appointment search
+        appointmentSearchDateField.setToolTipText("Enter date in YYYY-MM-DD format (e.g., 2024-12-25)");
+        appointmentSearchTimeField.setToolTipText("Enter time in HH:MM format (e.g., 14:30)");
+    }
+
+    private boolean isDatabaseConnectionValid() {
+        try {
+            return conn != null && !conn.isClosed() && conn.isValid(5);
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error checking database connection validity", ex);
+            return false;
+        }
+    }
+
+    private void loadAllPatients() {
+        try {
+            if (!isDatabaseConnectionValid()) {
+                JOptionPane.showMessageDialog(this, "Database connection not established!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            PatientDAO dao = new PatientDAO(conn);
+            List<Patient> patients = dao.getAllPatients();
+            updatePatientTable(patients);
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error loading patients", ex);
+            JOptionPane.showMessageDialog(this, "Error loading patients: " + ex.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    
+
+    private void updatePatientTable(List<Patient> patients) {
+        DefaultTableModel model = (DefaultTableModel) patientTable.getModel();
+        model.setRowCount(0);
+
+        if (patients.isEmpty()) {
+            model.addRow(new Object[]{"No patients found", "", "", "", "", "", ""});
+            return;
+        }
+
+        for (Patient p : patients) {
+            model.addRow(new Object[]{
+                p.getPatientId(),
+                p.getFullName(),
+                p.getAge(),
+                p.getDateOfBirth(),
+                p.getAddress(),
+                p.getContactNumber(),
+                p.getGender()
+            });
+        }
+    }
+
+    private void setupLiveSearch() {
+        javax.swing.Timer searchTimer = new javax.swing.Timer(300, new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                performPatientSearch();
+            }
+        });
+        searchTimer.setRepeats(false);
+
+        DocumentListener listener = new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                searchTimer.restart();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                searchTimer.restart();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                searchTimer.restart();
+            }
+        };
+
+        searchIdField.getDocument().addDocumentListener(listener);
+        searchNameField.getDocument().addDocumentListener(listener);
+        searchAgeField.getDocument().addDocumentListener(listener);
+        searchDobField.getDocument().addDocumentListener(listener);
+        searchMobileField.getDocument().addDocumentListener(listener);
+    }
+
+    private void performPatientSearch() {
+        try {
+            String id = searchIdField.getText().trim();
+            String name = searchNameField.getText().trim();
+            String age = searchAgeField.getText().trim();
+            String dob = searchDobField.getText().trim();
+            String mobile = searchMobileField.getText().trim();
+
+            if (!isDatabaseConnectionValid()) {
+                JOptionPane.showMessageDialog(this, "Database connection not established!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            PatientDAO dao = new PatientDAO(conn);
+            List<Patient> patients;
+
+            if (id.isEmpty() && name.isEmpty() && age.isEmpty() && dob.isEmpty() && mobile.isEmpty()) {
+                patients = dao.getAllPatients();
+            } else {
+                patients = dao.searchPatients(id, name, mobile);
+                // Filter by age and DOB if provided
+                if (!age.isEmpty() || !dob.isEmpty()) {
+                    patients = filterPatientsByAgeAndDOB(patients, age, dob);
+                }
+            }
+
+            updatePatientTable(patients);
+
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error searching patients", ex);
+            JOptionPane.showMessageDialog(this, "Error searching patients: " + ex.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private List<Patient> filterPatientsByAgeAndDOB(List<Patient> patients, String age, String dob) {
+        return patients.stream().filter(p -> {
+            boolean ageMatch = age.isEmpty() || String.valueOf(p.getAge()).contains(age);
+            boolean dobMatch = dob.isEmpty() || (p.getDateOfBirth() != null
+                    && p.getDateOfBirth().toString().contains(dob));
+            return ageMatch && dobMatch;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+    private void setupTableSelection() {
+        patientTable.getSelectionModel().addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            @Override
+            public void valueChanged(javax.swing.event.ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    displaySelectedPatientDetails();
+                }
+            }
+        });
+    }
+
+
+
+    private void displaySelectedPatientDetails() {
+        int selectedRow = patientTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            Object patientIdObj = patientTable.getValueAt(selectedRow, 0);
+            Object patientNameObj = patientTable.getValueAt(selectedRow, 1);
+            Object ageObj = patientTable.getValueAt(selectedRow, 2);
+            Object dobObj = patientTable.getValueAt(selectedRow, 3);
+            Object addressObj = patientTable.getValueAt(selectedRow, 4);
+            Object mobileObj = patientTable.getValueAt(selectedRow, 5);
+            Object genderObj = patientTable.getValueAt(selectedRow, 6);
+
+            // Handle null values and convert to strings safely
+            String patientId = patientIdObj != null ? patientIdObj.toString() : "";
+            String patientName = patientNameObj != null ? patientNameObj.toString() : "";
+            String age = ageObj != null ? ageObj.toString() : "";
+            String dob = dobObj != null ? dobObj.toString() : "";
+            String address = addressObj != null ? addressObj.toString() : "";
+            String mobile = mobileObj != null ? mobileObj.toString() : "";
+            String gender = genderObj != null ? genderObj.toString() : "";
+
+            // Skip if it's the "No patients found" row
+            if ("No patients found".equals(patientId)) {
+                return;
+            }
+
+            patientIdField.setText(patientId);
+            patientNameField.setText(patientName);
+            patientAgeField.setText(age);
+            patientDobField.setText(dob);
+            patientAddressField.setText(address);
+            patientMobileField.setText(mobile);
+            patientGenderField.setText(gender);
+        }
+    }
+
+    
+
+    private void addPatient() {
+        try {
+            if (!isDatabaseConnectionValid()) {
+                JOptionPane.showMessageDialog(this, "Database connection not established!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Validate required fields
+            if (patientNameField.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Patient name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Patient patient = new Patient();
+            patient.setPatientId(generatePatientId());
+            patient.setFirstName(patientNameField.getText().trim());
+            patient.setLastName(""); // You might want to add a separate last name field
+
+            // Handle age field
+            String ageText = patientAgeField.getText().trim();
+            if (ageText.isEmpty()) {
+                patient.setAge(0); // Default age
+            } else {
+                patient.setAge(Integer.parseInt(ageText));
+            }
+
+            patient.setAddress(patientAddressField.getText().trim());
+            patient.setGender(patientGenderField.getText().trim());
+            patient.setContactNumber(patientMobileField.getText().trim());
+
+            // Parse date of birth
+            try {
+                if (!patientDobField.getText().trim().isEmpty()) {
+                    java.sql.Date dob = java.sql.Date.valueOf(patientDobField.getText().trim());
+                    patient.setDateOfBirth(dob);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Invalid date format. Use YYYY-MM-DD", "Date Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            PatientDAO dao = new PatientDAO(conn);
+            if (dao.createPatient(patient)) {
+                JOptionPane.showMessageDialog(this, "Patient added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearPatientFields();
+                loadAllPatients();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to add patient!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error adding patient", ex);
+            JOptionPane.showMessageDialog(this, "Error adding patient: " + ex.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid age format!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void updatePatient() {
+        try {
+            if (!isDatabaseConnectionValid()) {
+                JOptionPane.showMessageDialog(this, "Database connection not established!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (patientIdField.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please select a patient to update!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Patient patient = new Patient();
+            patient.setPatientId(patientIdField.getText().trim());
+            patient.setFirstName(patientNameField.getText().trim());
+            patient.setLastName(""); // You might want to add a separate last name field
+
+            // Handle age field
+            String ageText = patientAgeField.getText().trim();
+            if (ageText.isEmpty()) {
+                patient.setAge(0); // Default age
+            } else {
+                patient.setAge(Integer.parseInt(ageText));
+            }
+
+            patient.setAddress(patientAddressField.getText().trim());
+            patient.setGender(patientGenderField.getText().trim());
+            patient.setContactNumber(patientMobileField.getText().trim());
+
+            // Parse date of birth
+            try {
+                if (!patientDobField.getText().trim().isEmpty()) {
+                    java.sql.Date dob = java.sql.Date.valueOf(patientDobField.getText().trim());
+                    patient.setDateOfBirth(dob);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Invalid date format. Use YYYY-MM-DD", "Date Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            PatientDAO dao = new PatientDAO(conn);
+            if (dao.updatePatient(patient)) {
+                JOptionPane.showMessageDialog(this, "Patient updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearPatientFields();
+                loadAllPatients();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update patient!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error updating patient", ex);
+            JOptionPane.showMessageDialog(this, "Error updating patient: " + ex.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid age format!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void deletePatient() {
+        try {
+            if (!isDatabaseConnectionValid()) {
+                JOptionPane.showMessageDialog(this, "Database connection not established!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (patientIdField.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please select a patient to delete!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete patient: " + patientNameField.getText() + "?",
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                PatientDAO dao = new PatientDAO(conn);
+                if (dao.deletePatient(patientIdField.getText().trim())) {
+                    JOptionPane.showMessageDialog(this, "Patient deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    clearPatientFields();
+                    loadAllPatients();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete patient!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error deleting patient", ex);
+            JOptionPane.showMessageDialog(this, "Error deleting patient: " + ex.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void clearPatientFields() {
+        patientIdField.setText("");
+        patientNameField.setText("");
+        patientAgeField.setText("");
+        patientDobField.setText("");
+        patientAddressField.setText("");
+        patientMobileField.setText("");
+        patientGenderField.setText("");
+    }
+
+    private String generatePatientId() {
+        // Generate a unique patient ID (you might want to implement a more sophisticated approach)
+        return "P" + System.currentTimeMillis();
+    }
+
+    
+
+    private void clearAppointmentFields() {
+        if (appointmentMediator != null) {
+            appointmentMediator.clearFields();
+        }
+    }
+
+    private void clearAppointmentSearchFields() {
+        if (appointmentMediator != null) {
+            appointmentMediator.clearSearchFields();
+        }
+    }
+
+    private void clearSearchFields() {
+        searchIdField.setText("");
+        searchNameField.setText("");
+        searchAgeField.setText("");
+        searchDobField.setText("");
+        searchMobileField.setText("");
+        loadAllPatients();
+    }
+
+    private void closeDatabaseConnection() {
+        try {
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
+                Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.INFO, "Database connection closed");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Nurse_Dashboard.class.getName()).log(Level.SEVERE, "Error closing database connection", ex);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -96,8 +631,18 @@ public class Nurse_Dashboard extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
 
-        setFocusableWindowState(false);
+        setFocusTraversalPolicyProvider(true);
         setResizable(false);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                closeDatabaseConnection();
+                if (appointmentMediator != null) {
+                    appointmentMediator.closeConnection();
+                }
+            }
+        });
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jTabbedPane1.setTabPlacement(javax.swing.JTabbedPane.LEFT);
@@ -149,10 +694,25 @@ public class Nurse_Dashboard extends javax.swing.JFrame {
         jLabel12.setText("Name");
 
         jButton1.setText("Add");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setText("Update");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jButton3.setText("Delete");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -436,10 +996,25 @@ public class Nurse_Dashboard extends javax.swing.JFrame {
         jLabel27.setText("Date");
 
         jButton7.setText("Add Appointment");
+        jButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton7ActionPerformed(evt);
+            }
+        });
 
         jButton8.setText("Update Appointment");
+        jButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton8ActionPerformed(evt);
+            }
+        });
 
         jButton9.setText("Cansel Appointment");
+        jButton9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton9ActionPerformed(evt);
+            }
+        });
 
         jLabel28.setText("Patient ID");
 
@@ -643,6 +1218,35 @@ public class Nurse_Dashboard extends javax.swing.JFrame {
     private void jTextField12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField12ActionPerformed
     }//GEN-LAST:event_jTextField12ActionPerformed
 
+    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        if (appointmentMediator != null) {
+            appointmentMediator.addAppointment();
+        }
+    }//GEN-LAST:event_jButton7ActionPerformed
+
+    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) throws Exception {                                         
+        if (appointmentMediator != null) {
+            appointmentMediator.updateAppointment();
+        }
+    }                                        
+
+    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+        if (appointmentMediator != null) {
+            appointmentMediator.deleteAppointment();
+        }
+    }//GEN-LAST:event_jButton9ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        addPatient();
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+          updatePatient();
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+            deletePatient();
+    }//GEN-LAST:event_jButton3ActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -1,4 +1,4 @@
-package panlen;
+package service;
 
 import dao.StockDAO;
 import model.Stock;

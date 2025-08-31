@@ -142,6 +142,77 @@ public class StockDAO {
         return stockList;
     }
 
+    // Advanced search stock by multiple fields
+    public List<Stock> searchStockAdvanced(String nameSearch, String idSearch, String categorySearch, 
+                                          String qtySearch, String dateSearch, String statusSearch) throws SQLException {
+        List<Stock> stockList = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM stock WHERE 1=1");
+        List<Object> parameters = new ArrayList<>();
+        
+        if (nameSearch != null && !nameSearch.trim().isEmpty()) {
+            sql.append(" AND name LIKE ?");
+            parameters.add("%" + nameSearch.trim() + "%");
+        }
+        
+        if (idSearch != null && !idSearch.trim().isEmpty()) {
+            try {
+                int stockId = Integer.parseInt(idSearch.trim());
+                sql.append(" AND stock_id = ?");
+                parameters.add(stockId);
+            } catch (NumberFormatException e) {
+                // If ID is not a valid number, skip this search criteria
+            }
+        }
+        
+        if (categorySearch != null && !categorySearch.trim().isEmpty()) {
+            sql.append(" AND category LIKE ?");
+            parameters.add("%" + categorySearch.trim() + "%");
+        }
+        
+        if (qtySearch != null && !qtySearch.trim().isEmpty()) {
+            try {
+                int quantity = Integer.parseInt(qtySearch.trim());
+                sql.append(" AND quantity = ?");
+                parameters.add(quantity);
+            } catch (NumberFormatException e) {
+                // If quantity is not a valid number, skip this search criteria
+            }
+        }
+        
+        if (dateSearch != null && !dateSearch.trim().isEmpty()) {
+            sql.append(" AND DATE(expiry_date) = ?");
+            parameters.add(dateSearch.trim());
+        }
+        
+        if (statusSearch != null && !statusSearch.trim().isEmpty()) {
+            sql.append(" AND status LIKE ?");
+            parameters.add("%" + statusSearch.trim() + "%");
+        }
+        
+        sql.append(" ORDER BY stock_id");
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < parameters.size(); i++) {
+                pstmt.setObject(i + 1, parameters.get(i));
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Stock stock = new Stock();
+                    stock.setStockId(rs.getInt("stock_id"));
+                    stock.setName(rs.getString("name"));
+                    stock.setCategory(rs.getString("category"));
+                    stock.setQuantity(rs.getInt("quantity"));
+                    stock.setUnitPrice(rs.getBigDecimal("unit_price"));
+                    stock.setExpiryDate(rs.getDate("expiry_date"));
+                    stock.setStatus(rs.getString("status"));
+                    stockList.add(stock);
+                }
+            }
+        }
+        return stockList;
+    }
+
     // Get low stock items
     public List<Stock> getLowStockItems(int threshold) throws SQLException {
         List<Stock> stockList = new ArrayList<>();

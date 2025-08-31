@@ -285,6 +285,62 @@ public class StaffDAO {
         return staffList;
     }
 
+    // Advanced search staff by name, role, and username separately
+    public List<Staff> searchStaffAdvanced(String nameSearch, String roleSearch, String usernameSearch) throws SQLException {
+        List<Staff> staffList = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT s.staff_id, s.first_name, s.last_name, s.role_id, s.department, " +
+                     "s.contact_number, s.email, u.username, u.status, r.role_name " +
+                     "FROM staff s " +
+                     "JOIN users u ON s.staff_id = u.staff_id " +
+                     "JOIN roles r ON s.role_id = r.role_id " +
+                     "WHERE 1=1");
+        
+        List<String> parameters = new ArrayList<>();
+        
+        if (nameSearch != null && !nameSearch.trim().isEmpty()) {
+            sql.append(" AND (s.first_name LIKE ? OR s.last_name LIKE ?)");
+            String namePattern = "%" + nameSearch.trim() + "%";
+            parameters.add(namePattern);
+            parameters.add(namePattern);
+        }
+        
+        if (roleSearch != null && !roleSearch.trim().isEmpty()) {
+            sql.append(" AND r.role_name LIKE ?");
+            parameters.add("%" + roleSearch.trim() + "%");
+        }
+        
+        if (usernameSearch != null && !usernameSearch.trim().isEmpty()) {
+            sql.append(" AND u.username LIKE ?");
+            parameters.add("%" + usernameSearch.trim() + "%");
+        }
+        
+        sql.append(" ORDER BY s.staff_id");
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < parameters.size(); i++) {
+                pstmt.setString(i + 1, parameters.get(i));
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Staff staff = new Staff();
+                    staff.setStaffId(rs.getInt("staff_id"));
+                    staff.setFirstName(rs.getString("first_name"));
+                    staff.setLastName(rs.getString("last_name"));
+                    staff.setRoleId(rs.getInt("role_id"));
+                    staff.setDepartment(rs.getString("department"));
+                    staff.setContactNumber(rs.getString("contact_number"));
+                    staff.setEmail(rs.getString("email"));
+                    staff.setUsername(rs.getString("username"));
+                    staff.setStatus(rs.getString("status"));
+                    staff.setRoleName(rs.getString("role_name"));
+                    staffList.add(staff);
+                }
+            }
+        }
+        return staffList;
+    }
+
     // Check if username already exists
     public boolean isUsernameExists(String username) throws SQLException {
         String sql = "SELECT COUNT(*) FROM users WHERE username = ?";

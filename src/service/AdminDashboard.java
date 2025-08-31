@@ -1,13 +1,13 @@
-package panlen;
+package service;
 
 import dao.StaffDAO;
 import dao.StockDAO;
 import dao.PatientDAO;
 import dao.BillingDAO;
-import panlen.StaffManagementPanel;
-import panlen.StockManagementPanel;
-import panlen.PatientManagementPanel;
-import panlen.BillingManagementPanel;
+import service.StaffManagementPanel;
+import service.StockManagementPanel;
+import service.PatientManagementPanel;
+import service.BillingManagementPanel;
 import utils.DBConnection;
 import utils.DashboardConstants;
 import javax.swing.*;
@@ -15,14 +15,7 @@ import java.sql.Connection;
 import java.awt.*;
 
 
-/**
- * AdminDashboard - Implements the Facade Pattern
- * 
- * This class provides a simplified interface to the complex subsystem
- * of management panels and DAOs. It acts as a unified entry point
- * that hides the complexity of individual components and provides
- * a clean, easy-to-use interface for the entire administrative system.
- */
+
 public class AdminDashboard extends JFrame {
     
     private StaffDAO staffDAO;
@@ -51,7 +44,6 @@ public class AdminDashboard extends JFrame {
             patientDAO = new PatientDAO(connection);
             billingDAO = new BillingDAO(connection);
             
-            // Initialize panels
             staffPanel = new StaffManagementPanel(staffDAO);
             stockPanel = new StockManagementPanel(stockDAO);
             patientPanel = new PatientManagementPanel(patientDAO);
@@ -71,19 +63,15 @@ public class AdminDashboard extends JFrame {
         setSize(1200, 800);
         setLocationRelativeTo(null);
         
-        // Create main layout
         setLayout(new BorderLayout());
         
-        // Header
         JPanel headerPanel = createHeaderPanel();
         add(headerPanel, BorderLayout.NORTH);
         
-        // Tabbed content
         tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
         setupTabs();
         add(tabbedPane, BorderLayout.CENTER);
         
-        // Footer
         JPanel footerPanel = createFooterPanel();
         add(footerPanel, BorderLayout.SOUTH);
     }
@@ -114,7 +102,6 @@ public class AdminDashboard extends JFrame {
     }
     
     private void setupTabs() {
-        // Stock Management Tab
         tabbedPane.addTab(
             DashboardConstants.STOCK_MANAGEMENT_TAB,
             null,

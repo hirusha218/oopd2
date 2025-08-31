@@ -3,24 +3,19 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/model/Appointment.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/StaffManagementPanel.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/RefactoredAdminDashboard.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/DashboardMediator.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/Dashboard/Nurse_Dashboard.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/com/Main.java</file>
+            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/dao/AppointmentDAO.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/PatientManagementPanel.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/test/CompleteSystemTest.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/utils/LoginCaretaker.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/Dashboard/Pharmacist_Dashboard.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/Dashboard/Admin_Dashboard.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/AdminDashboard.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/dto/UserLoginDTO.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/Dashboard/Doctor_Dashboard.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/BillingManagementPanel.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/model/Staff.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/model/User.java</file>
-            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/test/StaffManagementTest.java</file>
+            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/Dashboard/DriverManager.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/panlen/StockManagementPanel.java</file>
+            <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/model/Patient.java</file>
             <file>file:/C:/Users/Hiruw/OneDrive/Documents/NetBeansProjects/HealthLink360/src/gui/LoginFrame.java</file>
         </group>
     </open-files>

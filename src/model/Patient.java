@@ -2,16 +2,13 @@ package model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 
-/**
- *
- * @author Hiruw
- */
 public class Patient implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int patientId;
+    private String patientId;
     private String firstName;
     private String lastName;
     private Date dateOfBirth;
@@ -24,15 +21,18 @@ public class Patient implements Serializable {
     private String status;
     private Date registrationDate;
     private Date lastVisitDate;
+    private String medicalHistory;
+    private String medicalReport;
+    private String medicine;
+    private String Age;
 
-    // Default constructor
     public Patient() {
     }
 
-    // Parameterized constructor
-    public Patient(int patientId, String firstName, String lastName, Date dateOfBirth, String gender,
-                   String contactNumber, String email, String address, String emergencyContact, 
-                   Integer insuranceId, String status) {
+    public Patient(String patientId, String firstName, String lastName, Date dateOfBirth, String gender,
+            String contactNumber, String email, String address, String emergencyContact,
+            Integer insuranceId, String status, Date registrationDate, Date lastVisitDate,
+            String medicalHistory, String medicalReport, String medicine) {
         this.patientId = patientId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -44,16 +44,21 @@ public class Patient implements Serializable {
         this.emergencyContact = emergencyContact;
         this.insuranceId = insuranceId;
         this.status = status;
-        this.registrationDate = new Date();
-        this.lastVisitDate = new Date();
+        this.registrationDate = registrationDate != null ? new Date(registrationDate.getTime()) : new Date();
+        this.lastVisitDate = lastVisitDate != null ? new Date(lastVisitDate.getTime()) : new Date();
+        this.medicalHistory = medicalHistory;
+        this.medicalReport = medicalReport;
+        this.medicine = medicine;
+        this.Age = Age;
     }
 
-    // Getters and Setters
-    public int getPatientId() {
+    
+    
+    public String getPatientId() {
         return patientId;
     }
 
-    public void setPatientId(int patientId) {
+    public void setPatientId(String patientId) {
         this.patientId = patientId;
     }
 
@@ -74,11 +79,11 @@ public class Patient implements Serializable {
     }
 
     public Date getDateOfBirth() {
-        return dateOfBirth;
+        return dateOfBirth != null ? new Date(dateOfBirth.getTime()) : null;
     }
 
     public void setDateOfBirth(Date dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
+        this.dateOfBirth = dateOfBirth != null ? new Date(dateOfBirth.getTime()) : null;
     }
 
     public String getGender() {
@@ -90,6 +95,10 @@ public class Patient implements Serializable {
     }
 
     public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public String getMobile() {
         return contactNumber;
     }
 
@@ -138,24 +147,58 @@ public class Patient implements Serializable {
     }
 
     public Date getRegistrationDate() {
-        return registrationDate;
+        return registrationDate != null ? new Date(registrationDate.getTime()) : null;
     }
 
     public void setRegistrationDate(Date registrationDate) {
-        this.registrationDate = registrationDate;
+        this.registrationDate = registrationDate != null ? new Date(registrationDate.getTime()) : null;
     }
 
     public Date getLastVisitDate() {
-        return lastVisitDate;
+        return lastVisitDate != null ? new Date(lastVisitDate.getTime()) : null;
     }
 
     public void setLastVisitDate(Date lastVisitDate) {
-        this.lastVisitDate = lastVisitDate;
+        this.lastVisitDate = lastVisitDate != null ? new Date(lastVisitDate.getTime()) : null;
+    }
+
+    public String getMedicalHistory() {
+        return medicalHistory;
+    }
+
+    public void setMedicalHistory(String medicalHistory) {
+        this.medicalHistory = medicalHistory;
+    }
+
+    public String getMedicalReport() {
+        return medicalReport;
+    }
+
+    public void setMedicalReport(String medicalReport) {
+        this.medicalReport = medicalReport;
+    }
+
+    public String getMedicine() {
+        return medicine;
+    }
+
+    public void setMedicine(String medicine) {
+        this.medicine = medicine;
     }
 
     // Helper methods
     public String getFullName() {
-        return firstName + " " + lastName;
+        StringBuilder fullName = new StringBuilder();
+        if (firstName != null) {
+            fullName.append(firstName);
+        }
+        if (lastName != null) {
+            if (fullName.length() > 0) {
+                fullName.append(" ");
+            }
+            fullName.append(lastName);
+        }
+        return fullName.toString();
     }
 
     public int getAge() {
@@ -174,14 +217,46 @@ public class Patient implements Serializable {
     @Override
     public String toString() {
         return "Patient{"
-                + "patientId=" + patientId
+                + "patient_id='" + patientId + '\''
                 + ", firstName='" + firstName + '\''
                 + ", lastName='" + lastName + '\''
                 + ", dateOfBirth=" + dateOfBirth
                 + ", gender='" + gender + '\''
                 + ", contactNumber='" + contactNumber + '\''
                 + ", email='" + email + '\''
+                + ", address='" + address + '\''
+                + ", emergencyContact='" + emergencyContact + '\''
+                + ", insuranceId=" + insuranceId
                 + ", status='" + status + '\''
+                + ", registrationDate=" + registrationDate
+                + ", lastVisitDate=" + lastVisitDate
+                + ", medicalHistory='" + medicalHistory + '\''
+                + ", medicalReport='" + medicalReport + '\''
+                + ", medicine='" + medicine + '\''
                 + '}';
     }
-} 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Patient patient = (Patient) o;
+        return Objects.equals(patientId, patient.patientId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(patientId);
+    }
+
+    /**
+     * @param Age the Age to set
+     */
+    public void setAge(int Age) {
+        this.Age = null;
+    }
+}

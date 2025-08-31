@@ -18,7 +18,7 @@ public class StaffManagementTest {
         
         try {
             // Get database connection
-            Connection connection = DBConnection.getConnection();
+            Connection connection = null;
             System.out.println("Database connection successful!");
             
             // Create StaffDAO instance

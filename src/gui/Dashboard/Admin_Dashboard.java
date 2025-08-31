@@ -1,10 +1,10 @@
-
 package gui.Dashboard;
 
 import dao.StaffDAO;
 import dao.StockDAO;
 import dao.PatientDAO;
 import dao.BillingDAO;
+import java.math.BigDecimal;
 import model.Staff;
 import model.Stock;
 import model.Patient;
@@ -16,13 +16,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Hiruw
  */
 public class Admin_Dashboard extends javax.swing.JFrame {
-
+    
     private StaffDAO staffDAO;
     private StockDAO stockDAO;
     private PatientDAO patientDAO;
@@ -39,8 +42,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
     private Billing selectedBilling;
     
     private boolean isEditMode = false;
-
-   
+    
     public Admin_Dashboard() {
         initComponents();
         initializeAllPanels();
@@ -53,7 +55,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
             stockDAO = new StockDAO(connection);
             patientDAO = new PatientDAO(connection);
             billingDAO = new BillingDAO(connection);
-
+            
             initializeStaffManagement();
             initializeStockManagement();
             initializePatientManagement();
@@ -61,44 +63,45 @@ public class Admin_Dashboard extends javax.swing.JFrame {
             
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error initializing panels: " + e.getMessage(), 
-                                         "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing panels: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
     private void initializeStaffManagement() {
         try {
-            // Initialize table model
             staffTableModel = new DefaultTableModel() {
                 @Override
                 public boolean isCellEditable(int row, int column) {
-                    return false; // Make table read-only
+                    return false; 
                 }
             };
-
+            
             String[] columnNames = {"Staff ID", "First Name", "Last Name", "Role", "Contact Number", "Username", "Department", "Email", "Status"};
             for (String columnName : columnNames) {
                 staffTableModel.addColumn(columnName);
             }
-
+            
             Staff_table.setModel(staffTableModel);
-
+            
             loadStaffData();
-
+            
             Staff_table.getSelectionModel().addListSelectionListener(e -> {
                 if (!e.getValueIsAdjusting()) {
                     handleTableSelection();
                 }
             });
+            
+            // Setup search listeners for all three search fields
+            setupStaffSearchListeners();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error initializing staff management: " + e.getMessage(), 
-                                         "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing staff management: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
     private void initializeStockManagement() {
         try {
-            // Initialize table model
             stockTableModel = new DefaultTableModel() {
                 @Override
                 public boolean isCellEditable(int row, int column) {
@@ -106,27 +109,26 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 }
             };
 
-            // Define column names
             String[] columnNames = {"Stock ID", "Name", "Category", "Quantity", "Unit Price", "Expiry Date", "Status"};
             for (String columnName : columnNames) {
                 stockTableModel.addColumn(columnName);
             }
 
-            // Set table model to JTable
             stok_table.setModel(stockTableModel);
 
-            // Load initial data
             loadStockData();
 
-            // Add table selection listener
             stok_table.getSelectionModel().addListSelectionListener(e -> {
                 if (!e.getValueIsAdjusting()) {
                     handleStockTableSelection();
                 }
             });
+            
+            // Setup search listeners for stock search fields
+            setupStockSearchListeners();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error initializing stock management: " + e.getMessage(), 
-                                         "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing stock management: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -142,19 +144,22 @@ public class Admin_Dashboard extends javax.swing.JFrame {
             for (String columnName : columnNames) {
                 patientTableModel.addColumn(columnName);
             }
-
+            
             patient_table.setModel(patientTableModel);
-
+            
             loadPatientData();
-
+            
             patient_table.getSelectionModel().addListSelectionListener(e -> {
                 if (!e.getValueIsAdjusting()) {
                     handlePatientTableSelection();
                 }
             });
+            
+            // Setup search listeners for patient search fields
+            setupPatientSearchListeners();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error initializing patient management: " + e.getMessage(), 
-                                         "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing patient management: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -166,28 +171,30 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                     return false; // Make table read-only
                 }
             };
-
+            
             String[] columnNames = {"Bill ID", "Patient Name", "Doctor Name", "Total Amount", "Payment Status", "Bill Date"};
             for (String columnName : columnNames) {
                 billingTableModel.addColumn(columnName);
             }
-
+            
             bill_table.setModel(billingTableModel);
-
+            
             loadBillingData();
-
+            
             bill_table.getSelectionModel().addListSelectionListener(e -> {
                 if (!e.getValueIsAdjusting()) {
                     handleBillingTableSelection();
                 }
             });
+            
+            // Setup search listeners for billing search fields
+            setupBillingSearchListeners();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error initializing billing management: " + e.getMessage(), 
-                                         "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error initializing billing management: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
- 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -234,6 +241,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         s_role1 = new javax.swing.JTextField();
         jLabel12 = new javax.swing.JLabel();
         s_username1 = new javax.swing.JTextField();
+        clearSearchBtn = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         Staff_table = new javax.swing.JTable();
         jPanel10 = new javax.swing.JPanel();
@@ -336,10 +344,25 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         u_ex_date.setText(" ");
 
         u_update.setText("Update");
+        u_update.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_updateActionPerformed(evt);
+            }
+        });
 
         u_add.setText("Add");
+        u_add.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_addActionPerformed(evt);
+            }
+        });
 
         u_delete.setText("Delete");
+        u_delete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_deleteActionPerformed(evt);
+            }
+        });
 
         jLabel42.setText("Status");
 
@@ -409,6 +432,12 @@ public class Admin_Dashboard extends javax.swing.JFrame {
 
         jLabel41.setText("ID");
 
+        u_id.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_idActionPerformed(evt);
+            }
+        });
+
         jLabel43.setText("Catagory");
 
         jLabel44.setText("Qty");
@@ -418,6 +447,11 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         jLabel45.setText("Name");
 
         u_name1.setText(" ");
+        u_name1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_name1ActionPerformed(evt);
+            }
+        });
 
         jLabel46.setText("Ex_Date");
 
@@ -543,51 +577,36 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         jTabbedPane1.addTab("Stok Managemnt", jPanel5);
 
         jLabel10.setText("Name");
+        jPanel9.add(jLabel10);
+
+        s_name.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                s_nameActionPerformed(evt);
+            }
+        });
+        jPanel9.add(s_name);
 
         jLabel11.setText("Role");
+        jPanel9.add(jLabel11);
 
         s_role1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 s_role1ActionPerformed(evt);
             }
         });
+        jPanel9.add(s_role1);
 
         jLabel12.setText("Username");
+        jPanel9.add(jLabel12);
+        jPanel9.add(s_username1);
 
-        javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
-        jPanel9.setLayout(jPanel9Layout);
-        jPanel9Layout.setHorizontalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel10)
-                    .addComponent(s_name, javax.swing.GroupLayout.PREFERRED_SIZE, 169, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(30, 30, 30)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel11)
-                    .addComponent(s_role1, javax.swing.GroupLayout.PREFERRED_SIZE, 169, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(30, 30, 30)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(s_username1, javax.swing.GroupLayout.PREFERRED_SIZE, 169, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(320, Short.MAX_VALUE))
-        );
-        jPanel9Layout.setVerticalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
-                .addGap(30, 30, 30)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(jLabel11)
-                    .addComponent(jLabel12))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(s_name, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(s_role1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(s_username1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(29, Short.MAX_VALUE))
-        );
+        clearSearchBtn.setText("Clear Search");
+        clearSearchBtn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clearSearchBtnActionPerformed(evt);
+            }
+        });
+        jPanel9.add(clearSearchBtn);
 
         Staff_table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -623,10 +642,25 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         jLabel16.setText("Department");
 
         s_btn_1.setText("Add");
+        s_btn_1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                s_btn_1ActionPerformed(evt);
+            }
+        });
 
         s_btn_2.setText("Update ");
+        s_btn_2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                s_btn_2ActionPerformed(evt);
+            }
+        });
 
         s_btn_3.setText("Delete");
+        s_btn_3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                s_btn_3ActionPerformed(evt);
+            }
+        });
 
         jLabel17.setText("Username");
 
@@ -723,7 +757,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 .addComponent(jLabel25)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(s_department1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, 18, Short.MAX_VALUE)
                 .addComponent(s_btn_1)
                 .addGap(16, 16, 16)
                 .addComponent(s_btn_2)
@@ -757,10 +791,9 @@ public class Admin_Dashboard extends javax.swing.JFrame {
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 495, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 495, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel6Layout.createSequentialGroup()
                         .addComponent(jLabel49)
                         .addGap(18, 18, 18)
@@ -988,8 +1021,18 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         jLabel32.setText("Payment Stutas");
 
         b_btn_1.setText("Add");
+        b_btn_1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                b_btn_1ActionPerformed(evt);
+            }
+        });
 
         b_btn_2.setText("Update");
+        b_btn_2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                b_btn_2ActionPerformed(evt);
+            }
+        });
 
         b_btn_3.setText("Delete");
         b_btn_3.addActionListener(new java.awt.event.ActionListener() {
@@ -1154,13 +1197,216 @@ public class Admin_Dashboard extends javax.swing.JFrame {
     private void s_lname1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s_lname1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_s_lname1ActionPerformed
-    
+
+    private void s_btn_1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s_btn_1ActionPerformed
+        
+        if (!validateForm()) {
+            return;
+        }
+        
+        try {
+            if (staffDAO.isUsernameExists(s_username.getText().trim())) {
+                JOptionPane.showMessageDialog(this, "Username already exists. Please choose a different username.",
+                        "Validation Error", JOptionPane.WARNING_MESSAGE);
+                s_username.requestFocus();
+                return;
+            }
+            
+            Staff newStaff = getStaffFromForm();
+            String password = s_password.getText().trim();
+            if (staffDAO.createStaff(newStaff, password)) {
+                JOptionPane.showMessageDialog(this, "Staff member added successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearFormFields();
+                loadStaffData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to add staff member.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+    }//GEN-LAST:event_s_btn_1ActionPerformed
+
+    private void s_btn_2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s_btn_2ActionPerformed
+        if (selectedStaff == null) {
+            JOptionPane.showMessageDialog(this, "Please select a staff member to update.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        if (!validateForm()) {
+            return;
+        }
+        
+        try {
+            Staff updatedStaff = getStaffFromForm();
+
+            if (!updatedStaff.getUsername().equals(selectedStaff.getUsername())
+                    && staffDAO.isUsernameExists(updatedStaff.getUsername())) {
+                JOptionPane.showMessageDialog(this, "Username already exists. Please choose a different username.",
+                        "Validation Error", JOptionPane.WARNING_MESSAGE);
+                s_username.requestFocus();
+                return;
+            }
+            
+            String password = s_password.getText().trim();
+            if (staffDAO.updateStaff(updatedStaff, password)) {
+                JOptionPane.showMessageDialog(this, "Staff member updated successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearFormFields();
+                loadStaffData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update staff member.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_s_btn_2ActionPerformed
+
+    private void s_btn_3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s_btn_3ActionPerformed
+        
+        if (selectedStaff == null) {
+            JOptionPane.showMessageDialog(this, "Please select a staff member to delete.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete staff member: " + selectedStaff.getFullName() + "?",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (staffDAO.deleteStaff(selectedStaff.getStaffId())) {
+                    JOptionPane.showMessageDialog(this, "Staff member deleted successfully!",
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                    clearFormFields();
+                    loadStaffData();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete staff member.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_s_btn_3ActionPerformed
+
+    private void s_nameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_s_nameActionPerformed
+        performSearch();
+    }//GEN-LAST:event_s_nameActionPerformed
+
+    private void clearSearchBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearSearchBtnActionPerformed
+        clearSearchFields();
+    }//GEN-LAST:event_clearSearchBtnActionPerformed
+
+    private void clearStockSearchBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearStockSearchBtnActionPerformed
+        clearStockSearchFields();
+    }//GEN-LAST:event_clearStockSearchBtnActionPerformed
+
+    private void clearBillingSearchBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearBillingSearchBtnActionPerformed
+        clearBillingSearchFields();
+    }//GEN-LAST:event_clearBillingSearchBtnActionPerformed
+
+    private void u_deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_deleteActionPerformed
+        if (selectedStock == null) {
+            JOptionPane.showMessageDialog(this, "Please select a stock item to delete.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete stock item: " + selectedStock.getName() + "?",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                if (stockDAO.deleteStock(selectedStock.getStockId())) {
+                    JOptionPane.showMessageDialog(this, "Stock item deleted successfully!",
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                    clearStockFormFields();
+                    loadStockData();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete stock item.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }    }//GEN-LAST:event_u_deleteActionPerformed
+
+    private void b_btn_1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_b_btn_1ActionPerformed
+        try {
+            List<Billing> unpaidBills = billingDAO.searchBilling("Unpaid");
+            billingTableModel.setRowCount(0);
+            
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            for (Billing billing : unpaidBills) {
+                billingTableModel.addRow(new Object[]{
+                    billing.getBillId(),
+                    billing.getPatientName(),
+                    billing.getDoctorName(),
+                    billing.getFormattedAmount(),
+                    billing.getPaymentStatus(),
+                    billing.getBillDate() != null ? dateFormat.format(billing.getBillDate()) : "N/A"
+                });
+            }
+            JOptionPane.showMessageDialog(this, "Filtered Unpaid Bills", "Info", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error filtering bills: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+    }//GEN-LAST:event_b_btn_1ActionPerformed
+
+    private void b_btn_2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_b_btn_2ActionPerformed
+        if (selectedBilling == null) {
+            JOptionPane.showMessageDialog(this, "Please select a billing record to update.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        if (!validateForm()) {
+            return;
+        }
+        
+        try {
+            Billing updatedBilling = billingDAO.getBillingById(WIDTH);
+            if (billingDAO.updateBilling(updatedBilling)) {
+                JOptionPane.showMessageDialog(this, "Billing record updated successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearFormFields();
+                loadBillingData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update billing record.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_b_btn_2ActionPerformed
+
+    private void u_name1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_name1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_u_name1ActionPerformed
+
+    private void u_idActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_idActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_u_idActionPerformed
+
     // Staff Management Helper Methods
     private void loadStaffData() {
         try {
             List<Staff> staffList = staffDAO.getAllStaff();
             staffTableModel.setRowCount(0); // Clear existing rows
-            
+
             for (Staff staff : staffList) {
                 Object[] row = {
                     staff.getStaffId(),
@@ -1176,8 +1422,8 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 staffTableModel.addRow(row);
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error loading staff data: " + ex.getMessage(), 
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading staff data: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -1188,7 +1434,6 @@ public class Admin_Dashboard extends javax.swing.JFrame {
             selectedStaff.setStaffId((Integer) staffTableModel.getValueAt(selectedRow, 0));
             selectedStaff.setFirstName((String) staffTableModel.getValueAt(selectedRow, 1));
             selectedStaff.setLastName((String) staffTableModel.getValueAt(selectedRow, 2));
-
             try {
                 Staff fullStaff = staffDAO.getStaffById(selectedStaff.getStaffId());
                 if (fullStaff != null) {
@@ -1196,8 +1441,8 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                     populateFormFields(selectedStaff);
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error loading staff details: " + ex.getMessage(), 
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error loading staff details: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -1205,20 +1450,486 @@ public class Admin_Dashboard extends javax.swing.JFrame {
     private void populateFormFields(Staff staff) {
         s_fname1.setText(staff.getFirstName());
         s_lname1.setText(staff.getLastName());
-        s_role.setText(staff.getRoleName()); // Display role name instead of role ID
+        s_role.setText(staff.getRoleName()); 
         s_mobile.setText(staff.getContactNumber());
         s_username.setText(staff.getUsername());
-        s_password.setText(""); // Don't populate password for security
+        s_password.setText(""); 
         s_department.setText(staff.getDepartment());
         s_department1.setText(staff.getEmail());
     }
+    
+    private void clearFormFields() {
+        s_fname1.setText("");
+        s_lname1.setText("");
+        s_role.setText("");
+        s_mobile.setText("");
+        s_username.setText("");
+        s_password.setText("");
+        s_department.setText("");
+        s_department1.setText("");
+        selectedStaff = null;
+        isEditMode = false;
+    }
+    
+    private Staff getStaffFromForm() {
+        Staff staff = new Staff();
+        if (selectedStaff != null) {
+            staff.setStaffId(selectedStaff.getStaffId());
+        }
+        staff.setFirstName(s_fname1.getText().trim());
+        staff.setLastName(s_lname1.getText().trim());
+        // Convert role name to role ID
+        try {
+            int roleId = staffDAO.getRoleIdByName(s_role.getText().trim());
+            if (roleId == -1) {
+                throw new IllegalArgumentException("Invalid role: " + s_role.getText().trim());
+            }
+            staff.setRoleId(roleId);
+        } catch (SQLException ex) {
+            throw new RuntimeException("Error getting role ID: " + ex.getMessage());
+        }
+        staff.setContactNumber(s_mobile.getText().trim());
+        staff.setUsername(s_username.getText().trim());
+        staff.setPassword(s_password.getText().trim());
+        staff.setDepartment(s_department.getText().trim());
+        staff.setEmail(s_department1.getText().trim());
+        staff.setStatus("Active");
+        return staff;
+    }
+    
+    private boolean validateForm() {
+        if (s_fname1.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter First Name", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            s_fname1.requestFocus();
+            return false;
+        }
+        if (s_lname1.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Last Name", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            s_lname1.requestFocus();
+            return false;
+        }
+        if (s_role.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Role", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            s_role.requestFocus();
+            return false;
+        }
+        if (s_username.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Username", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            s_username.requestFocus();
+            return false;
+        }
+        if (s_password.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Password", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            s_password.requestFocus();
+            return false;
+        }
+        return true;
+    }
+
+    // Search functionality
+    private void performSearch() {
+        String nameSearch = s_name.getText().trim();
+        String roleSearch = s_role1.getText().trim();
+        String usernameSearch = s_username1.getText().trim();
         
+        // If all search fields are empty, load all staff
+        if (nameSearch.isEmpty() && roleSearch.isEmpty() && usernameSearch.isEmpty()) {
+            loadStaffData(); 
+            return;
+        }
+        
+        try {
+            List<Staff> searchResults = staffDAO.searchStaffAdvanced(nameSearch, roleSearch, usernameSearch);
+            staffTableModel.setRowCount(0); 
+
+            for (Staff staff : searchResults) {
+                Object[] row = {
+                    staff.getStaffId(),
+                    staff.getFirstName(),
+                    staff.getLastName(),
+                    staff.getRoleName(),
+                    staff.getContactNumber(),
+                    staff.getUsername(),
+                    staff.getDepartment(),
+                    staff.getEmail(),
+                    staff.getStatus()
+                };
+                staffTableModel.addRow(row);
+            }
+            
+            if (searchResults.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No staff members found matching the search criteria.",
+                        "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+//                JOptionPane.showMessageDialog(this, "Found " + searchResults.size() + " staff member(s) matching the search criteria.",
+//                        "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Search error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Setup search listeners for all three search fields
+    private void setupStaffSearchListeners() {
+        // Add document listeners to all search fields
+        s_name.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+        });
+        
+        s_role1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+        });
+        
+        s_username1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performSearch(); }
+        });
+    }
+    
+    // Clear search fields
+    private void clearSearchFields() {
+        s_name.setText("");
+        s_role1.setText("");
+        s_username1.setText("");
+        loadStaffData(); // Reload all data when search is cleared
+    }
+    
+    // Stock Management Search Methods
+    private void setupStockSearchListeners() {
+        // Add document listeners to all stock search fields
+        u_name1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+        
+        u_id.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+        
+        catagory1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+        
+        qty1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+        
+        u_ex_date1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+        
+        u_status1.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performStockSearch(); }
+        });
+    }
+    
+    private void performStockSearch() {
+        String nameSearch = u_name1.getText().trim();
+        String idSearch = u_id.getText().trim();
+        String categorySearch = catagory1.getText().trim();
+        String qtySearch = qty1.getText().trim();
+        String dateSearch = u_ex_date1.getText().trim();
+        String statusSearch = u_status1.getText().trim();
+        
+        // If all search fields are empty, load all stock
+        if (nameSearch.isEmpty() && idSearch.isEmpty() && categorySearch.isEmpty() && 
+            qtySearch.isEmpty() && dateSearch.isEmpty() && statusSearch.isEmpty()) {
+            loadStockData();
+            return;
+        }
+        
+        try {
+            List<Stock> searchResults = stockDAO.searchStockAdvanced(nameSearch, idSearch, categorySearch, 
+                                                                   qtySearch, dateSearch, statusSearch);
+            stockTableModel.setRowCount(0);
+
+            for (Stock stock : searchResults) {
+                Object[] row = {
+                    stock.getStockId(),
+                    stock.getName(),
+                    stock.getCategory(),
+                    stock.getQuantity(),
+                    stock.getUnitPrice() != null ? "$" + stock.getUnitPrice().toString() : "$0.00",
+                    stock.getExpiryDate() != null ? new java.text.SimpleDateFormat("yyyy-MM-dd").format(stock.getExpiryDate()) : "N/A",
+                    stock.getStatus()
+                };
+                stockTableModel.addRow(row);
+            }
+            
+            if (searchResults.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No stock items found matching the search criteria.",
+                        "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                // JOptionPane.showMessageDialog(this, "Found " + searchResults.size() + " stock item(s) matching the search criteria.",
+                //         "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Search error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Clear stock search fields
+    private void clearStockSearchFields() {
+        u_name1.setText("");
+        u_id.setText("");
+        catagory1.setText("");
+        qty1.setText("");
+        u_ex_date1.setText("");
+        u_status1.setText("");
+        loadStockData(); // Reload all data when search is cleared
+    }
+    
+    // Patient Management Search Methods
+    private void setupPatientSearchListeners() {
+        // Add document listeners to all patient search fields
+        patient_id_2.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+        });
+        
+        patient_name_2.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+        });
+        
+        mobile_2.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performPatientSearch(); }
+        });
+    }
+    
+    private void performPatientSearch() {
+        String idSearch = patient_id_2.getText().trim();
+        String nameSearch = patient_name_2.getText().trim();
+        String mobileSearch = mobile_2.getText().trim();
+        
+        // If all search fields are empty, load all patients
+        if (idSearch.isEmpty() && nameSearch.isEmpty() && mobileSearch.isEmpty()) {
+            loadPatientData();
+            return;
+        }
+        
+        try {
+            List<Patient> searchResults = patientDAO.searchPatients(idSearch, nameSearch, mobileSearch);
+            patientTableModel.setRowCount(0);
+
+            for (Patient patient : searchResults) {
+                Object[] row = {
+                    patient.getPatientId(),
+                    patient.getFirstName(),
+                    patient.getLastName(),
+                    patient.getGender(),
+                    patient.getContactNumber(),
+                    patient.getEmail(),
+                    patient.getStatus()
+                };
+                patientTableModel.addRow(row);
+            }
+            
+            if (searchResults.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No patients found matching the search criteria.",
+                        "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Search error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Clear patient search fields
+    private void clearPatientSearchFields() {
+        patient_id_2.setText("");
+        patient_name_2.setText("");
+        mobile_2.setText("");
+        loadPatientData(); // Reload all data when search is cleared
+    }
+    
+    // Billing Management Search Methods
+    private void setupBillingSearchListeners() {
+        // Add document listeners to all billing search fields
+        billing_id.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bill_p_stutas.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bill_p_name.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bil_d_name.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bill_date_form.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bill_date_to.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+        
+        bil_amount.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { performBillingSearch(); }
+        });
+    }
+    
+    private void performBillingSearch() {
+        String idSearch = billing_id.getText().trim();
+        String statusSearch = bill_p_stutas.getText().trim();
+        String patientNameSearch = bill_p_name.getText().trim();
+        String doctorNameSearch = bil_d_name.getText().trim();
+        String dateFromSearch = bill_date_form.getText().trim();
+        String dateToSearch = bill_date_to.getText().trim();
+        String amountSearch = bil_amount.getText().trim();
+        
+        // If all search fields are empty, load all billing data
+        if (idSearch.isEmpty() && statusSearch.isEmpty() && patientNameSearch.isEmpty() && 
+            doctorNameSearch.isEmpty() && dateFromSearch.isEmpty() && dateToSearch.isEmpty() && 
+            amountSearch.isEmpty()) {
+            loadBillingData();
+            return;
+        }
+        
+        try {
+            List<Billing> searchResults = billingDAO.searchBillingAdvanced(idSearch, statusSearch, patientNameSearch, 
+                                                                         doctorNameSearch, dateFromSearch, dateToSearch, amountSearch);
+            billingTableModel.setRowCount(0);
+
+            for (Billing billing : searchResults) {
+                Object[] row = {
+                    billing.getBillId(),
+                    billing.getPatientName(),
+                    billing.getDoctorName(),
+                    billing.getFormattedAmount(),
+                    billing.getPaymentStatus(),
+                    billing.getBillDate() != null ? new java.text.SimpleDateFormat("yyyy-MM-dd").format(billing.getBillDate()) : "N/A"
+                };
+                billingTableModel.addRow(row);
+            }
+            
+            if (searchResults.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No billing records found matching the search criteria.",
+                        "Search Results", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Search error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Clear billing search fields
+    private void clearBillingSearchFields() {
+        billing_id.setText("");
+        bill_p_stutas.setText("");
+        bill_p_name.setText("");
+        bil_d_name.setText("");
+        bill_date_form.setText("");
+        bill_date_to.setText("");
+        bil_amount.setText("");
+        loadBillingData(); // Reload all data when search is cleared
+    }
+
     // ==================== STOCK MANAGEMENT METHODS ====================
     private void loadStockData() {
         try {
             List<Stock> stockList = stockDAO.getAllStock();
             stockTableModel.setRowCount(0); // Clear existing rows
-            
+
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             
             for (Stock stock : stockList) {
@@ -1234,10 +1945,11 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 stockTableModel.addRow(row);
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error loading stock data: " + ex.getMessage(), 
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading stock data: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+    
     private void handleStockTableSelection() {
         int selectedRow = stok_table.getSelectedRow();
         if (selectedRow >= 0) {
@@ -1248,11 +1960,12 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                     populateStockFormFields(selectedStock);
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error loading stock details: " + ex.getMessage(), 
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error loading stock details: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+    
     private void populateStockFormFields(Stock stock) {
         u_name.setText(stock.getName());
         catagory.setText(stock.getCategory());
@@ -1262,13 +1975,74 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         u_ex_date.setText(stock.getExpiryDate() != null ? dateFormat.format(stock.getExpiryDate()) : "");
         u_status.setText(stock.getStatus());
     }
-    // ==================== PATIENT MANAGEMENT METHODS ====================
     
+    private void clearStockFormFields() {
+        u_name.setText("");
+        catagory.setText("");
+        qty.setText("");
+        u_price.setText("");
+        u_ex_date.setText("");
+        u_status.setText("");
+        selectedStock = null;
+    }
+    
+    private Stock getStockFromForm() {
+        Stock stock = new Stock();
+        if (selectedStock != null) {
+            stock.setStockId(selectedStock.getStockId());
+        }
+        stock.setName(u_name.getText().trim());
+        stock.setCategory(catagory.getText().trim());
+        try {
+            stock.setQuantity(Integer.parseInt(qty.getText().trim()));
+        } catch (NumberFormatException e) {
+            stock.setQuantity(0);
+        }
+        try {
+            stock.setUnitPrice(new BigDecimal(u_price.getText().trim()));
+        } catch (NumberFormatException e) {
+            stock.setUnitPrice(BigDecimal.ZERO);
+        }
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            stock.setExpiryDate(dateFormat.parse(u_ex_date.getText().trim()));
+        } catch (Exception e) {
+            stock.setExpiryDate(new Date());
+        }
+        stock.setStatus(u_status.getText().trim());
+        return stock;
+    }
+    
+    private boolean validateStockForm() {
+        if (u_name.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Name", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            u_name.requestFocus();
+            return false;
+        }
+        if (catagory.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Category", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            catagory.requestFocus();
+            return false;
+        }
+        if (qty.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Quantity", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            qty.requestFocus();
+            return false;
+        }
+        if (u_price.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter Unit Price", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            u_price.requestFocus();
+            return false;
+        }
+        return true;
+    }
+
+    // ==================== PATIENT MANAGEMENT METHODS ====================
     private void loadPatientData() {
         try {
             List<Patient> patientList = patientDAO.getAllPatients();
             patientTableModel.setRowCount(0); // Clear existing rows
-            
+
             for (Patient patient : patientList) {
                 Object[] row = {
                     patient.getPatientId(),
@@ -1282,23 +2056,18 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 patientTableModel.addRow(row);
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error loading patient data: " + ex.getMessage(), 
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading patient data: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
     private void handlePatientTableSelection() {
         int selectedRow = patient_table.getSelectedRow();
         if (selectedRow >= 0) {
-            try {
-                int patientId = (Integer) patientTableModel.getValueAt(selectedRow, 0);
-                selectedPatient = patientDAO.getPatientById(patientId);
-                if (selectedPatient != null) {
-                    populatePatientFormFields(selectedPatient);
-                }
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error loading patient details: " + ex.getMessage(), 
-                                            "Error", JOptionPane.ERROR_MESSAGE);
+            int patientId = (Integer) patientTableModel.getValueAt(selectedRow, 0);
+            selectedPatient = patientDAO.getPatientById(patientId);
+            if (selectedPatient != null) {
+                populatePatientFormFields(selectedPatient);
             }
         }
     }
@@ -1309,14 +2078,19 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         mobile_2.setText(patient.getContactNumber());
     }
     
-    
+    private void clearPatientFormFields() {
+        patient_id_2.setText("");
+        patient_name_2.setText("");
+        mobile_2.setText("");
+        selectedPatient = null;
+    }
+
     // ==================== BILLING MANAGEMENT METHODS ====================
-    
     private void loadBillingData() {
         try {
             List<Billing> billingList = billingDAO.getAllBilling();
             billingTableModel.setRowCount(0); // Clear existing rows
-            
+
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             for (Billing billing : billingList) {
                 Object[] row = {
@@ -1330,8 +2104,8 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                 billingTableModel.addRow(row);
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error loading billing data: " + ex.getMessage(), 
-                                        "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading billing data: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -1345,9 +2119,9 @@ public class Admin_Dashboard extends javax.swing.JFrame {
                     populateBillingFormFields(selectedBilling);
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error loading billing details: " + ex.getMessage(), 
-                                            "Error", JOptionPane.ERROR_MESSAGE);
-        }
+                JOptionPane.showMessageDialog(this, "Error loading billing details: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
     
@@ -1359,12 +2133,67 @@ public class Admin_Dashboard extends javax.swing.JFrame {
         bill_p_stutas_1.setText(billing.getPaymentStatus());
     }
     
-    
-    
+    private void clearBillingFormFields() {
+        billing_id_1.setText("");
+        bill_p_name_1.setText("");
+        bil_d_name_1.setText("");
+        bil_amount_1.setText("");
+        bill_p_stutas_1.setText("");
+        selectedBilling = null;
+    }
 
- 
+    // ==================== STOCK MANAGEMENT ACTION METHODS ====================
+    private void u_addActionPerformed(java.awt.event.ActionEvent evt) {
+        if (!validateStockForm()) {
+            return;
+        }
+        
+        try {
+            Stock newStock = getStockFromForm();
+            if (stockDAO.createStock(newStock)) {
+                JOptionPane.showMessageDialog(this, "Stock item added successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearStockFormFields();
+                loadStockData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to add stock item.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void u_updateActionPerformed(java.awt.event.ActionEvent evt) {
+        if (selectedStock == null) {
+            JOptionPane.showMessageDialog(this, "Please select a stock item to update.",
+                    "Information", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        if (!validateStockForm()) {
+            return;
+        }
+        
+        try {
+            Stock updatedStock = getStockFromForm();
+            if (stockDAO.updateStock(updatedStock)) {
+                JOptionPane.showMessageDialog(this, "Stock item updated successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                clearStockFormFields();
+                loadStockData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update stock item.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
- 
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable Staff_table;
     private javax.swing.JButton b_btn_1;
@@ -1385,6 +2214,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
     private javax.swing.JTextField billing_id_1;
     private javax.swing.JTextField catagory;
     private javax.swing.JTextField catagory1;
+    private javax.swing.JButton clearSearchBtn;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1477,5 +2307,7 @@ public class Admin_Dashboard extends javax.swing.JFrame {
     private javax.swing.JTextField u_status;
     private javax.swing.JTextField u_status1;
     private javax.swing.JButton u_update;
+    private javax.swing.JButton clearStockSearchBtn;
+    private javax.swing.JButton clearBillingSearchBtn;
     // End of variables declaration//GEN-END:variables
 }
